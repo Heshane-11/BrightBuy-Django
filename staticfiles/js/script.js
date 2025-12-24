@@ -1,60 +1,67 @@
-// some scripts
+// ===============================
+// GLOBAL IMAGE SWITCH FUNCTION
+// ===============================
+function changeImage(element) {
+    const mainImage = document.getElementById("mainProductImage");
 
-// jquery ready start
-$(document).ready(function() {
-	// jQuery code
+    if (mainImage) {
+        mainImage.src = element.src;
+    }
 
+    document.querySelectorAll(".thumb-image").forEach(img => {
+        img.classList.remove("active-thumb");
+    });
+
+    element.classList.add("active-thumb");
+}
+
+
+
+// ===============================
+// jQuery ready start
+// ===============================
+$(document).ready(function () {
 
     /* ///////////////////////////////////////
+       BASIC UI INTERACTIONS
+    /////////////////////////////////////// */
 
-    THESE FOLLOWING SCRIPTS ONLY FOR BASIC USAGE, 
-    For sliders, interactions and other
 
-    */ ///////////////////////////////////////
-    
-
-	//////////////////////// Prevent closing from click inside dropdown
+    // Prevent dropdown from closing when clicking inside
     $(document).on('click', '.dropdown-menu', function (e) {
-      e.stopPropagation();
+        e.stopPropagation();
     });
 
 
+    // Radio button active state
     $('.js-check :radio').change(function () {
-        var check_attr_name = $(this).attr('name');
-        if ($(this).is(':checked')) {
-            $('input[name='+ check_attr_name +']').closest('.js-check').removeClass('active');
-            $(this).closest('.js-check').addClass('active');
-           // item.find('.radio').find('span').text('Add');
-
-        } else {
-            item.removeClass('active');
-            // item.find('.radio').find('span').text('Unselect');
-        }
+        const name = $(this).attr('name');
+        $('input[name="' + name + '"]').closest('.js-check').removeClass('active');
+        $(this).closest('.js-check').addClass('active');
     });
 
 
+    // Checkbox active state
     $('.js-check :checkbox').change(function () {
-        var check_attr_name = $(this).attr('name');
-        if ($(this).is(':checked')) {
-            $(this).closest('.js-check').addClass('active');
-           // item.find('.radio').find('span').text('Add');
-        } else {
-            $(this).closest('.js-check').removeClass('active');
-            // item.find('.radio').find('span').text('Unselect');
-        }
+        $(this).closest('.js-check').toggleClass('active', this.checked);
     });
 
 
-
-	//////////////////////// Bootstrap tooltip
-	if($('[data-toggle="tooltip"]').length>0) {  // check if element exists
-		$('[data-toggle="tooltip"]').tooltip()
-	} // end if
-
+    // Bootstrap tooltip
+    if ($('[data-toggle="tooltip"]').length > 0) {
+        $('[data-toggle="tooltip"]').tooltip();
+    }
 
 
+    // ===============================
+    // AUTO-SELECT FIRST THUMBNAIL
+    // ===============================
+    const firstThumb = document.querySelector(".thumb-image");
+    if (firstThumb) {
+        firstThumb.classList.add("active-thumb");
+    }
 
-    
-}); 
-// jquery end
-
+});
+// ===============================
+// jQuery ready end
+// ===============================
