@@ -1,28 +1,24 @@
 from django.db import migrations
 
-def reset_admin(apps, schema_editor):
+def reset_admin_password(apps, schema_editor):
     User = apps.get_model('accounts', 'Account')
-    email = "hishu3851@gmail.com"
-    password = "TempAdmin@123"
 
     try:
-        user = User.objects.get(email=email)
-        user.set_password(password)
+        user = User.objects.get(email="hishu3851@gmail.com")
+        user.set_password("TempAdmin@123")
         user.is_staff = True
         user.is_superuser = True
         user.save()
     except User.DoesNotExist:
-        user = User.objects.create_superuser(
-            email=email,
-            password=password
-        )
+        pass
+
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0006_create_admin'),  # update if number differs
+        ('accounts', '0006_create_admin'),
     ]
 
     operations = [
-        migrations.RunPython(reset_admin),
+        migrations.RunPython(reset_admin_password),
     ]
