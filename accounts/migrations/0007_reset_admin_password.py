@@ -1,5 +1,5 @@
 from django.db import migrations
-
+from django.contrib.auth.hashers import make_password
 
 def reset_admin_password(apps, schema_editor):
     User = apps.get_model('accounts', 'Account')
@@ -9,7 +9,7 @@ def reset_admin_password(apps, schema_editor):
 
     try:
         user = User.objects.get(email=email)
-        user.set_password(password)  # ✅ SAFE inside migrations
+        user.password = make_password(password)
         user.is_staff = True
         user.is_superuser = True
         user.save()
