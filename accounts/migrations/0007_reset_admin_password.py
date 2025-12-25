@@ -1,11 +1,15 @@
 from django.db import migrations
 
+
 def reset_admin_password(apps, schema_editor):
     User = apps.get_model('accounts', 'Account')
 
+    email = "hishu3851@gmail.com"
+    password = "TempAdmin@123"
+
     try:
-        user = User.objects.get(email="hishu3851@gmail.com")
-        user.set_password("TempAdmin@123")
+        user = User.objects.get(email=email)
+        user.set_password(password)  # ✅ SAFE inside migrations
         user.is_staff = True
         user.is_superuser = True
         user.save()
@@ -16,7 +20,7 @@ def reset_admin_password(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0006_create_admin'),
+        ('accounts', '0005_alter_userprofile_profile_picture'),
     ]
 
     operations = [
