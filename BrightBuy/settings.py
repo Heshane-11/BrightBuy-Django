@@ -25,9 +25,10 @@ ALLOWED_HOSTS = config(
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://127.0.0.1,http://localhost',
+    default='http://127.0.0.1,http://localhost,https://*.onrender.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
 
 
 # --------------------------------------------------
@@ -127,6 +128,9 @@ else:
 # AUTH
 # --------------------------------------------------
 AUTH_USER_MODEL = 'accounts.Account'
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 
 # --------------------------------------------------
