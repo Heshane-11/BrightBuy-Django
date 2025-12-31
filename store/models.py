@@ -3,7 +3,7 @@ from category.models import Category
 from django.urls import reverse
 from accounts.models import Account
 from django.db.models import Avg, Count
-
+from cloudinary.models import CloudinaryField
 # Create your models here.
 
 class Product(models.Model):
@@ -11,7 +11,7 @@ class Product(models.Model):
     slug            = models.SlugField(max_length=200, unique=True)
     description     = models.TextField(max_length=500, blank=True)
     price           = models.IntegerField()
-    images = models.ImageField(upload_to='products/')
+    images = CloudinaryField('image')
     stock           = models.IntegerField()
     is_available    = models.BooleanField(default=True)
     category        = models.ForeignKey(Category, on_delete=models.CASCADE)
