@@ -10,7 +10,6 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 
-
 @csrf_exempt
 @transaction.atomic
 def payments(request):
@@ -22,7 +21,6 @@ def payments(request):
         order_number=body['orderID']
     )
 
-    # Save payment
     payment = Payment.objects.create(
         user=request.user,
         payment_id=body['transID'],
@@ -38,7 +36,7 @@ def payments(request):
     cart_items = CartItem.objects.filter(user=request.user)
 
     for item in cart_items:
-        order_product = OrderProduct.objects.create(
+        orderproduct = OrderProduct.objects.create(
             order=order,
             payment=payment,
             user=request.user,
@@ -47,36 +45,33 @@ def payments(request):
             product_price=item.product.price,
             ordered=True,
         )
+        orderproduct.variations.set(item.variations.all())
 
-        order_product.variations.set(item.variations.all())
+        item.product.stock -= item.quantity
+        item.product.save()
 
-        # Reduce stock
-        product = item.product
-        product.stock -= item.quantity
-        product.save()
-
-    # Clear cart
     cart_items.delete()
 
-    # ✅ SEND ORDER CONFIRMATION EMAIL (HTML)
-    mail_subject = 'Thank you for your order!'
-    message = render_to_string('orders/order_recieved_email.html', {
-        'user': request.user,
-        'order': order,
-    })
-
-    send_email = EmailMessage(
-        mail_subject,
-        message,
-        to=[request.user.email]
-    )
-    send_email.content_subtype = "html"   # 🔥 MOST IMPORTANT LINE
-    send_email.send(fail_silently=False)
+    # EMAIL (safe)
+    try:
+        mail_subject = 'Thank you for your order!'
+        message = render_to_string('orders/order_recieved_email.html', {
+            'user': request.user,
+            'order': order,
+        })
+        EmailMessage(
+            mail_subject,
+            message,
+            to=[request.user.email]
+        ).send()
+    except Exception as e:
+        print("EMAIL ERROR:", e)
 
     return JsonResponse({
         'order_number': order.order_number,
         'transID': payment.payment_id,
     })
+
 
 
 def place_order(request, total=0, quantity=0):
