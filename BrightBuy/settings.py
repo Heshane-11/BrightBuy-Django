@@ -25,9 +25,10 @@ ALLOWED_HOSTS = config(
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://127.0.0.1,http://localhost,https://*.onrender.com',
+    default='http://127.0.0.1,http://localhost,https://brightbuy-l59r.onrender.com',
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
+
 
 
 
