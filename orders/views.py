@@ -8,8 +8,10 @@ from store.models import Product
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.db import transaction
+from django.views.decorators.csrf import csrf_exempt
 
 
+@csrf_exempt
 @transaction.atomic
 def payments(request):
     body = json.loads(request.body)
