@@ -14,7 +14,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 
 @csrf_exempt
-@transaction.atomic
 def payments(request):
     body = json.loads(request.body)
     print("🔥 PAYMENTS HIT:", body)
@@ -33,49 +32,45 @@ def payments(request):
         status=body['status'],
     )
 
+    # 🔥 VERY IMPORTANT — mark order FIRST
     order.payment = payment
     order.is_ordered = True
     order.status = 'Completed'
     order.save()
 
-    cart_items = CartItem.objects.filter(user=request.user)
-
-    for item in cart_items:
-        orderproduct = OrderProduct.objects.create(
-            order=order,
-            payment=payment,
-            user=request.user,
-            product=item.product,
-            quantity=item.quantity,
-            product_price=item.product.price,
-            ordered=True,
-        )
-        orderproduct.variations.set(item.variations.all())
-
-        item.product.stock -= item.quantity
-        item.product.save()
-
-    cart_items.delete()
-
-    # 🔥 EMAIL — DO NOT BLOCK RESPONSE
-    try:
-        mail_subject = 'Thank you for your order!'
-        message = render_to_string('orders/order_recieved_email.html', {
-            'user': request.user,
-            'order': order,
-        })
-        EmailMessage(
-            mail_subject,
-            message,
-            to=[request.user.email]
-        ).send(fail_silently=True)
-    except Exception as e:
-        print("EMAIL ERROR (ignored):", e)
-
-    return JsonResponse({
+    # 🔥 RETURN RESPONSE IMMEDIATELY
+    response = JsonResponse({
         'order_number': order.order_number,
         'transID': payment.payment_id,
     })
+
+    # 🔻 HEAVY WORK AFTER RESPONSE
+    def post_payment_tasks():
+        cart_items = CartItem.objects.filter(user=request.user)
+
+        for item in cart_items:
+            orderproduct = OrderProduct.objects.create(
+                order=order,
+                payment=payment,
+                user=request.user,
+                product=item.product,
+                quantity=item.quantity,
+                product_price=item.product.price,
+                ordered=True,
+            )
+            orderproduct.variations.set(item.variations.all())
+
+            item.product.stock -= item.quantity
+            item.product.save()
+
+        cart_items.delete()
+
+    try:
+        post_payment_tasks()
+    except Exception as e:
+        print("POST PAYMENT ERROR:", e)
+
+    return response
 
 
 def place_order(request, total=0, quantity=0):
