@@ -13,74 +13,69 @@ from django.views.decorators.csrf import csrf_exempt
 
 
 
-
 @csrf_exempt
 @transaction.atomic
 def payments(request):
+    body = json.loads(request.body)
+    print("🔥 PAYMENTS HIT:", body)
+
+    order = Order.objects.get(
+        user=request.user,
+        is_ordered=False,
+        order_number=body['orderID']
+    )
+
+    payment = Payment.objects.create(
+        user=request.user,
+        payment_id=body['transID'],
+        payment_method=body['payment_method'],
+        amount_paid=order.order_total,
+        status=body['status'],
+    )
+
+    order.payment = payment
+    order.is_ordered = True
+    order.status = 'Completed'
+    order.save()
+
+    cart_items = CartItem.objects.filter(user=request.user)
+
+    for item in cart_items:
+        orderproduct = OrderProduct.objects.create(
+            order=order,
+            payment=payment,
+            user=request.user,
+            product=item.product,
+            quantity=item.quantity,
+            product_price=item.product.price,
+            ordered=True,
+        )
+        orderproduct.variations.set(item.variations.all())
+
+        item.product.stock -= item.quantity
+        item.product.save()
+
+    cart_items.delete()
+
+    # 🔥 EMAIL — DO NOT BLOCK RESPONSE
     try:
-        body = json.loads(request.body)
-        print("🔥 PAYMENTS HIT:", body)
-
-        order = Order.objects.get(
-            order_number=body['orderID'],
-            is_ordered=False
-        )
-
-        payment = Payment.objects.create(
-            user=order.user,  # 🔥 NOT request.user
-            payment_id=body['transID'],
-            payment_method=body.get('payment_method', 'PayPal'),
-            amount_paid=order.order_total,
-            status=body['status'],
-        )
-
-        order.payment = payment
-        order.is_ordered = True
-        order.status = "Completed"
-        order.save()
-
-        cart_items = CartItem.objects.filter(user=order.user)
-
-        for item in cart_items:
-            orderproduct = OrderProduct.objects.create(
-                order=order,
-                payment=payment,
-                user=order.user,
-                product=item.product,
-                quantity=item.quantity,
-                product_price=item.product.price,
-                ordered=True,
-            )
-            orderproduct.variations.set(item.variations.all())
-
-            item.product.stock -= item.quantity
-            item.product.save()
-
-        cart_items.delete()
-
-        # Email (safe)
-        try:
-            mail_subject = 'Thank you for your order!'
-            message = render_to_string(
-                'orders/order_recieved_email.html',
-                {'user': order.user, 'order': order}
-            )
-            EmailMessage(
-                mail_subject,
-                message,
-                to=[order.user.email]
-            ).send()
-        except Exception as e:
-            print("EMAIL ERROR:", e)
-
-        return JsonResponse({
-            'order_number': order.order_number,
-            'transID': payment.payment_id,
+        mail_subject = 'Thank you for your order!'
+        message = render_to_string('orders/order_recieved_email.html', {
+            'user': request.user,
+            'order': order,
         })
-
+        EmailMessage(
+            mail_subject,
+            message,
+            to=[request.user.email]
+        ).send(fail_silently=True)
     except Exception as e:
-        print("❌ PAYMENTS ERROR:", e)
-        return JsonResponse({'error': str(e)}, status=500)
+        print("EMAIL ERROR (ignored):", e)
+
+    return JsonResponse({
+        'order_number': order.order_number,
+        'transID': payment.payment_id,
+    })
 
 
 def place_order(request, total=0, quantity=0):
