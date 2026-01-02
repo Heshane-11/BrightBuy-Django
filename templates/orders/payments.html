@@ -145,7 +145,6 @@
 }
 
 	var amount = "{{ grand_total }}"
-	var url = "{% url 'payments' %}"
 	var csrftoken = getCookie('csrftoken');
 	var orderID = "{{order.order_number}}"
 	var payment_method = 'PayPal'
@@ -178,18 +177,17 @@
 				console.log(details);
 				sendData();
 				function sendData(){
-					fetch(url, {
+					fetch("/orders/payments/", {
 						method : "POST",
 						headers: {
-							"Content-type": "application/json",
-							"X-CSRFToken": csrftoken,
+							"Content-type": "application/json"
 						},
 						body: JSON.stringify({
 							orderID: orderID,
 							transID: details.id,
 							payment_method: payment_method,
-							status: details.status,
-						}),
+							status: details.status
+						})
 					})
 				  .then((response) => response.json())
 				  .then((data) => {

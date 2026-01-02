@@ -11,78 +11,76 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 
+
+
+
 @csrf_exempt
 @transaction.atomic
 def payments(request):
+    try:
+        body = json.loads(request.body)
+        print("🔥 PAYMENTS HIT:", body)
 
-    if request.method != "POST":
-        return HttpResponseBadRequest("Invalid request")
-
-    body = json.loads(request.body)
-
-    # 🔐 Order fetch WITHOUT user dependency
-    order = Order.objects.get(
-        order_number=body['orderID'],
-        is_ordered=False
-    )
-
-    payment = Payment.objects.create(
-        user=order.user,
-        payment_id=body['transID'],
-        payment_method=body['payment_method'],
-        amount_paid=order.order_total,
-        status=body['status'],
-    )
-
-    order.payment = payment
-    order.is_ordered = True
-    order.status = "Completed"   # ✅ VERY IMPORTANT
-    order.save()
-
-    cart_items = CartItem.objects.filter(user=order.user)
-
-    for item in cart_items:
-        orderproduct = OrderProduct.objects.create(
-            order=order,
-            payment=payment,
-            user=order.user,
-            product=item.product,
-            quantity=item.quantity,
-            product_price=item.product.price,
-            ordered=True,
+        order = Order.objects.get(
+            order_number=body['orderID'],
+            is_ordered=False
         )
 
-        orderproduct.variations.set(item.variations.all())
+        payment = Payment.objects.create(
+            user=order.user,  # 🔥 NOT request.user
+            payment_id=body['transID'],
+            payment_method=body.get('payment_method', 'PayPal'),
+            amount_paid=order.order_total,
+            status=body['status'],
+        )
 
-        # stock reduce
-        product = item.product
-        product.stock -= item.quantity
-        product.save()
+        order.payment = payment
+        order.is_ordered = True
+        order.status = "Completed"
+        order.save()
 
-    cart_items.delete()
+        cart_items = CartItem.objects.filter(user=order.user)
 
-    # 📧 EMAIL (PRODUCTION SAFE)
-    try:
-        mail_subject = 'Thank you for your order!'
-        message = render_to_string('orders/order_recieved_email.html', {
-            'user': order.user,
-            'order': order,
+        for item in cart_items:
+            orderproduct = OrderProduct.objects.create(
+                order=order,
+                payment=payment,
+                user=order.user,
+                product=item.product,
+                quantity=item.quantity,
+                product_price=item.product.price,
+                ordered=True,
+            )
+            orderproduct.variations.set(item.variations.all())
+
+            item.product.stock -= item.quantity
+            item.product.save()
+
+        cart_items.delete()
+
+        # Email (safe)
+        try:
+            mail_subject = 'Thank you for your order!'
+            message = render_to_string(
+                'orders/order_recieved_email.html',
+                {'user': order.user, 'order': order}
+            )
+            EmailMessage(
+                mail_subject,
+                message,
+                to=[order.user.email]
+            ).send()
+        except Exception as e:
+            print("EMAIL ERROR:", e)
+
+        return JsonResponse({
+            'order_number': order.order_number,
+            'transID': payment.payment_id,
         })
 
-        EmailMessage(
-            mail_subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [order.user.email]
-        ).send(fail_silently=False)
-
     except Exception as e:
-        print("EMAIL ERROR:", e)
-
-    return JsonResponse({
-        'order_number': order.order_number,
-        'transID': payment.payment_id,
-    })
+        print("❌ PAYMENTS ERROR:", e)
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 def place_order(request, total=0, quantity=0):
