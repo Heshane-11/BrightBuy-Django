@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from carts.models import CartItem
 from .forms import OrderForm
+from django.conf import settings
 import datetime, json
 from .models import Order, Payment, OrderProduct
 from store.models import Product
@@ -13,16 +14,20 @@ from django.views.decorators.csrf import csrf_exempt
 @csrf_exempt
 @transaction.atomic
 def payments(request):
+
+    if request.method != "POST":
+        return HttpResponseBadRequest("Invalid request")
+
     body = json.loads(request.body)
 
+    # 🔐 Order fetch WITHOUT user dependency
     order = Order.objects.get(
-        user=request.user,
-        is_ordered=False,
-        order_number=body['orderID']
+        order_number=body['orderID'],
+        is_ordered=False
     )
 
     payment = Payment.objects.create(
-        user=request.user,
+        user=order.user,
         payment_id=body['transID'],
         payment_method=body['payment_method'],
         amount_paid=order.order_total,
@@ -31,39 +36,46 @@ def payments(request):
 
     order.payment = payment
     order.is_ordered = True
+    order.status = "Completed"   # ✅ VERY IMPORTANT
     order.save()
 
-    cart_items = CartItem.objects.filter(user=request.user)
+    cart_items = CartItem.objects.filter(user=order.user)
 
     for item in cart_items:
         orderproduct = OrderProduct.objects.create(
             order=order,
             payment=payment,
-            user=request.user,
+            user=order.user,
             product=item.product,
             quantity=item.quantity,
             product_price=item.product.price,
             ordered=True,
         )
+
         orderproduct.variations.set(item.variations.all())
 
-        item.product.stock -= item.quantity
-        item.product.save()
+        # stock reduce
+        product = item.product
+        product.stock -= item.quantity
+        product.save()
 
     cart_items.delete()
 
-    # EMAIL (safe)
+    # 📧 EMAIL (PRODUCTION SAFE)
     try:
         mail_subject = 'Thank you for your order!'
         message = render_to_string('orders/order_recieved_email.html', {
-            'user': request.user,
+            'user': order.user,
             'order': order,
         })
+
         EmailMessage(
             mail_subject,
             message,
-            to=[request.user.email]
-        ).send()
+            settings.DEFAULT_FROM_EMAIL,
+            [order.user.email]
+        ).send(fail_silently=False)
+
     except Exception as e:
         print("EMAIL ERROR:", e)
 
@@ -71,7 +83,6 @@ def payments(request):
         'order_number': order.order_number,
         'transID': payment.payment_id,
     })
-
 
 
 def place_order(request, total=0, quantity=0):
