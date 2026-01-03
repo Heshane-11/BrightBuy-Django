@@ -41,20 +41,21 @@ def payments(request):
         status=body['status'],
     )
 
-    # ✅ MARK ORDER FIRST (VERY IMPORTANT)
+    # ✅ ORDER MARK FIRST (FAST)
     order.payment = payment
     order.is_ordered = True
     order.status = 'Completed'
     order.save()
 
-    # ✅ SEND RESPONSE IMMEDIATELY (PayPal redirect works)
+    # ✅ IMMEDIATE RESPONSE (Gunicorn safe)
     response = JsonResponse({
         'order_number': order.order_number,
         'transID': payment.payment_id,
     })
 
-    # ================= BACKGROUND TASK =================
+    # ================= POST PAYMENT TASKS =================
     def post_payment_tasks():
+        # 🛒 cart → order products
         cart_items = CartItem.objects.filter(user=request.user)
 
         for item in cart_items:
@@ -74,32 +75,35 @@ def payments(request):
 
         cart_items.delete()
 
-        # 📧 EMAIL
+        # 📧 EMAIL (THREAD)
         try:
-            mail_subject = 'Thank you for your order!'
+            subject = "Thank you for your order!"
             message = render_to_string(
-                'orders/order_recieved_email.html',
+                "orders/order_recieved_email.html",
                 {
-                    'user': order.user,
-                    'order': order,
+                    "user": order.user,
+                    "order": order,
                 }
             )
 
             email = EmailMessage(
-                mail_subject,
+                subject,
                 message,
-                to=[order.email]
+                to=[order.email],
             )
 
-            EmailThread(email).start()   # ✅ BACKGROUND EMAIL
+            EmailThread(email).start()   # ⭐ MOST IMPORTANT LINE
+
+            print("📧 EMAIL SENT")
 
         except Exception as e:
-            print("EMAIL ERROR:", e)
+            print("❌ EMAIL ERROR:", e)
 
-    # ✅ RUN HEAVY TASK IN THREAD
+    # 🔥 RUN AFTER RESPONSE (NO BLOCKING)
     threading.Thread(target=post_payment_tasks).start()
 
     return response
+
 
 
 
