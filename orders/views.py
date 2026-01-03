@@ -14,11 +14,14 @@ import threading
 
 class EmailThread(threading.Thread):
     def __init__(self, email):
-        super().__init__()
         self.email = email
+        super().__init__()
 
     def run(self):
+        print("📧 Sending email in background...")
         self.email.send(fail_silently=True)
+        print("✅ Email thread finished")
+
 
 
 
