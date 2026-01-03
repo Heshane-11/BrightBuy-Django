@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from carts.models import CartItem
 from .forms import OrderForm
 from django.conf import settings
-import datetime, json, threading
+import datetime, json
 from .models import Order, Payment, OrderProduct
 from store.models import Product
 from django.core.mail import EmailMessage
@@ -12,15 +12,6 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 
 # ================= EMAIL HELPERS =================
-
-class EmailThread(threading.Thread):
-    def __init__(self, email):
-        self.email = email
-        super().__init__()
-
-    def run(self):
-        self.email.send()
-
 
 @csrf_exempt
 def payments(request):

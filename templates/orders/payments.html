@@ -171,31 +171,36 @@
 		},
 
 		// Finalize the transaction
-		onApprove: function(data, actions) {
-			return actions.order.capture().then(function(details) {
-				// Show a success message to the buyer
-				console.log(details);
-				sendData();
-				function sendData(){
-					fetch("/orders/payments/", {
-						method : "POST",
-						headers: {
-							"Content-type": "application/json"
-						},
-						body: JSON.stringify({
-							orderID: orderID,
-							transID: details.id,
-							payment_method: payment_method,
-							status: details.status
-						})
-					})
-				  .then((response) => response.json())
-				  .then((data) => {
-						window.location.href = redirect_url + '?order_number='+data.order_number+'&payment_id='+data.transID;
-					});
-				}
-			});
-		}
+onApprove: function (data, actions) {
+    return actions.order.capture().then(function (details) {
+
+        fetch("{% url 'payments' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrftoken
+            },
+            body: JSON.stringify({
+                orderID: "{{ order.order_number }}",
+                transID: details.id,
+                payment_method: "PayPal",
+                status: details.status
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+			if (data.order_number && data.transID) {
+				window.location.href =
+					"{% url 'order_complete' %}" +
+					"?order_number=" + data.order_number +
+					"&payment_id=" + data.transID;
+			} else {
+				alert("Payment completed but order not saved.");
+			}
+		});
+    });
+}
+
 
 
 	}).render('#paypal-button-container');
