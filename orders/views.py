@@ -3,7 +3,7 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from carts.models import CartItem
 from .forms import OrderForm
 from django.conf import settings
-import datetime, json
+import datetime, json, threading
 from .models import Order, Payment, OrderProduct
 from store.models import Product
 from django.core.mail import EmailMessage
@@ -11,6 +11,15 @@ from django.template.loader import render_to_string
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 
+# ================= EMAIL HELPERS =================
+
+class EmailThread(threading.Thread):
+    def __init__(self, email):
+        self.email = email
+        super().__init__()
+
+    def run(self):
+        self.email.send()
 
 
 @csrf_exempt
@@ -32,19 +41,19 @@ def payments(request):
         status=body['status'],
     )
 
-    # 🔥 VERY IMPORTANT — mark order FIRST
+    # ✅ MARK ORDER FIRST (VERY IMPORTANT)
     order.payment = payment
     order.is_ordered = True
     order.status = 'Completed'
     order.save()
 
-    # 🔥 RETURN RESPONSE IMMEDIATELY
+    # ✅ SEND RESPONSE IMMEDIATELY (PayPal redirect works)
     response = JsonResponse({
         'order_number': order.order_number,
         'transID': payment.payment_id,
     })
 
-    # 🔻 HEAVY WORK AFTER RESPONSE
+    # ================= BACKGROUND TASK =================
     def post_payment_tasks():
         cart_items = CartItem.objects.filter(user=request.user)
 
@@ -65,12 +74,34 @@ def payments(request):
 
         cart_items.delete()
 
-    try:
-        post_payment_tasks()
-    except Exception as e:
-        print("POST PAYMENT ERROR:", e)
+        # 📧 EMAIL
+        try:
+            mail_subject = 'Thank you for your order!'
+            message = render_to_string(
+                'orders/order_recieved_email.html',
+                {
+                    'user': order.user,
+                    'order': order,
+                }
+            )
+
+            email = EmailMessage(
+                mail_subject,
+                message,
+                to=[order.email]
+            )
+
+            EmailThread(email).start()   # ✅ BACKGROUND EMAIL
+
+        except Exception as e:
+            print("EMAIL ERROR:", e)
+
+    # ✅ RUN HEAVY TASK IN THREAD
+    threading.Thread(target=post_payment_tasks).start()
 
     return response
+
+
 
 
 def place_order(request, total=0, quantity=0):
