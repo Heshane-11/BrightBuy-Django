@@ -14,44 +14,43 @@ import threading
 
 class EmailThread(threading.Thread):
     def __init__(self, email):
-        self.email = email
         super().__init__()
+        self.email = email
 
     def run(self):
-        print("📧 Sending email in background...")
-        self.email.send(fail_silently=True)
-        print("✅ Email thread finished")
-
-
+        print("📧 Sending email...")
+        self.email.send()   # ❗ fail_silently=False for debugging
+        print("✅ Email sent")
 
 
 @csrf_exempt
 def payments(request):
     body = json.loads(request.body)
+    print("🔥 PAYMENTS HIT:", body)
 
     order = Order.objects.get(
         user=request.user,
         is_ordered=False,
-        order_number=body['orderID']
+        order_number=body["orderID"]
     )
 
     payment = Payment.objects.create(
         user=request.user,
-        payment_id=body['transID'],
-        payment_method=body['payment_method'],
+        payment_id=body["transID"],
+        payment_method=body["payment_method"],
         amount_paid=order.order_total,
-        status=body['status'],
+        status=body["status"],
     )
 
     order.payment = payment
     order.is_ordered = True
-    order.status = 'Completed'
+    order.status = "Completed"
     order.save()
 
-    # cart → order products
+    # Cart → Order Products
     cart_items = CartItem.objects.filter(user=request.user)
     for item in cart_items:
-        OrderProduct.objects.create(
+        order_product = OrderProduct.objects.create(
             order=order,
             payment=payment,
             user=request.user,
@@ -60,30 +59,43 @@ def payments(request):
             product_price=item.product.price,
             ordered=True,
         )
+        order_product.variations.set(item.variations.all())
+
         item.product.stock -= item.quantity
         item.product.save()
 
     cart_items.delete()
 
-    # 🚀 RESPONSE FIRST (IMPORTANT)
-    response = JsonResponse({
-        'order_number': order.order_number,
-        'transID': payment.payment_id,
-    })
-
-    # 🔥 EMAIL FIRE & FORGET
+    # 🔥 SEND EMAIL
     try:
         subject = "Thank you for your order!"
         message = render_to_string(
             "orders/order_recieved_email.html",
-            {"order": order}
+            {
+                "order": order,
+                "user": request.user,
+            }
         )
-        email = EmailMessage(subject, message, to=[order.email])
-        EmailThread(email).start()   # async
-    except Exception as e:
-        print("EMAIL ERROR:", e)
 
-    return response
+        email = EmailMessage(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [order.email],
+        )
+        email.content_subtype = "html"
+
+        EmailThread(email).start()
+
+    except Exception as e:
+        print("❌ EMAIL ERROR:", e)
+
+    return JsonResponse({
+        "order_number": order.order_number,
+        "transID": payment.payment_id,
+    })
+
+
 
 
 
