@@ -18,3 +18,5 @@ urllib3==2.5.0
 whitenoise==6.11.0
 gunicorn==21.2.0
 python-dotenv
+sendgrid>=6.11.0
+django-sendgrid-v5>=1.2.3
