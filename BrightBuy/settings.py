@@ -38,7 +38,7 @@ cloudinary.config(
     secure=True
 )
 
-
+CREATE_SUPERUSER = os.environ.get("CREATE_SUPERUSER", "False") == "True"
 
 # --------------------------------------------------
 # APPLICATIONS
