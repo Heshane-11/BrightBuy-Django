@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.contrib.auth import get_user_model
 import os
 
 class AccountsConfig(AppConfig):
@@ -7,9 +8,7 @@ class AccountsConfig(AppConfig):
 
     def ready(self):
         if os.environ.get("CREATE_SUPERUSER") == "True":
-            from django.contrib.auth import get_user_model
             User = get_user_model()
-
             email = "hishu3851@gmail.com"
             password = "StrongPassword123"
 
@@ -19,3 +18,5 @@ class AccountsConfig(AppConfig):
                     password=password
                 )
                 print("✅ Superuser created")
+            else:
+                print("ℹ️ Superuser already exists")
