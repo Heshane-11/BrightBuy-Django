@@ -44,7 +44,7 @@ def payments(request):
 
     order.payment = payment
     order.is_ordered = True
-    order.status = "Completed"
+    order.status = "Ordered"
     order.save()
 
     # Cart → Order Products
@@ -171,7 +171,3 @@ def order_complete(request):
 
     except (Order.DoesNotExist, Payment.DoesNotExist):
         return redirect('home')
-
-def track_order(request, order_id):
-    order = get_object_or_404(Order, id=order_id)
-    return render(request, 'orders/track_order.html', {'order': order})
