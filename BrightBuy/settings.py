@@ -52,14 +52,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cloudinary',
     'cloudinary_storage',
-
+    'orders.apps.OrdersConfig',
     # local apps
     'category',
     'accounts',
     'store',
     'carts',
-    'orders',
     'wishlist',
+    'channels'
 ]
 
 
@@ -86,6 +86,8 @@ MIDDLEWARE = [
 # --------------------------------------------------
 ROOT_URLCONF = 'BrightBuy.urls'
 WSGI_APPLICATION = 'BrightBuy.wsgi.application'
+ASGI_APPLICATION = 'BrightBuy.asgi.application'
+
 
 
 # --------------------------------------------------
@@ -216,3 +218,13 @@ MESSAGE_TAGS = {
 # DEFAULT PRIMARY KEY
 # --------------------------------------------------
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}

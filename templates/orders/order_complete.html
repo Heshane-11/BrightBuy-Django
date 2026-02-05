@@ -113,5 +113,32 @@
     </div>
     </div>
 
+<script>
+const orderId = "{{ order.id }}";
+
+const socket = new WebSocket(
+  'ws://' + window.location.host + '/ws/order/' + orderId + '/'
+);
+
+// ✅ ADD THIS
+socket.onopen = function () {
+    console.log("✅ WebSocket connected for order:", orderId);
+};
+
+socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    console.log("📦 Order update received:", data);
+    alert("Order Status: " + data.status);
+};
+
+socket.onerror = function(e) {
+    console.error("❌ WebSocket error", e);
+};
+
+socket.onclose = function() {
+    console.log("⚠️ WebSocket closed");
+};
+</script>
+
 
 {% endblock %}
