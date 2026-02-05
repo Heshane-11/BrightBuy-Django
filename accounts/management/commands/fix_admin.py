@@ -2,30 +2,42 @@ from django.core.management.base import BaseCommand
 from accounts.models import Account
 
 class Command(BaseCommand):
-    help = "Create admin user if not exists"
+    help = "Create or reset admin user"
 
     def handle(self, *args, **kwargs):
-        email = "dropati5911@gmail.com"
-        password = "StrongPassword123"
+        email = "hishu3851@gmail.com"
+        password = "12345"   # 🔐 FINAL password
 
-        # ✅ EARLY EXIT IF ADMIN EXISTS
-        if Account.objects.filter(email=email).exists():
-            self.stdout.write(self.style.WARNING("⚠️ Superuser already exists"))
-            return
+        try:
+            user = Account.objects.get(email=email)
 
-        # ✅ CREATE ADMIN
-        user = Account.objects.create_user(
-            email=email,
-            username="admin",
-            first_name="Admin",
-            last_name="User",
-            password=password,
-        )
+            # 🔁 RESET PASSWORD
+            user.set_password(password)
+            user.is_staff = True
+            user.is_admin = True
+            user.is_superadmin = True
+            user.is_active = True
+            user.save()
 
-        user.is_staff = True
-        user.is_admin = True
-        user.is_superadmin = True
-        user.is_active = True
-        user.save()
+            self.stdout.write(
+                self.style.SUCCESS("✅ Superuser EXISTS — password RESET successfully")
+            )
 
-        self.stdout.write(self.style.SUCCESS("✅ Superuser CREATED"))
+        except Account.DoesNotExist:
+            # 🆕 CREATE USER
+            user = Account.objects.create_user(
+                email=email,
+                username="admin",
+                first_name="Heshane",
+                last_name="Garg",
+                password=password,
+            )
+            user.is_staff = True
+            user.is_admin = True
+            user.is_superadmin = True
+            user.is_active = True
+            user.save()
+
+            self.stdout.write(
+                self.style.SUCCESS("✅ Superuser CREATED successfully")
+            )
