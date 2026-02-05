@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
 from carts.models import CartItem
 from .forms import OrderForm
@@ -171,3 +171,7 @@ def order_complete(request):
 
     except (Order.DoesNotExist, Payment.DoesNotExist):
         return redirect('home')
+
+def track_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    return render(request, 'orders/track_order.html', {'order': order})
