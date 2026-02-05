@@ -23,18 +23,23 @@ socket.onmessage = (e) => {
   const data = JSON.parse(e.data);
   const badge = document.getElementById("order-status");
 
-  if (data.status === "Pending") {
-    badge.innerText = "Pending";
+  if (data.status === "New") {
+    badge.innerText = "New";
     badge.className = "badge badge-warning";
-  }
-  if (data.status === "Shipped") {
-    badge.innerText = "Shipped";
-    badge.className = "badge badge-success";
-  }
-  if (data.status === "Delivered") {
-    badge.innerText = "Delivered";
+    }
+    if (data.status === "Accepted") {
+    badge.innerText = "Accepted";
     badge.className = "badge badge-primary";
-  }
+    }
+    if (data.status === "Completed") {
+    badge.innerText = "Completed";
+    badge.className = "badge badge-success";
+    }
+    if (data.status === "Cancelled") {
+    badge.innerText = "Cancelled";
+    badge.className = "badge badge-danger";
+    }
+
 };
 
 socket.onclose = () => {
