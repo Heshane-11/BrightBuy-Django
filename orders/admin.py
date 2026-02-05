@@ -8,6 +8,7 @@ class OrderProductInline(admin.TabularInline):
     readonly_fields = ('payment', 'user', 'product', 'quantity', 'product_price', 'ordered')
     extra = 0
 
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', 'status', 'created_at')
@@ -16,14 +17,19 @@ class OrderAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
 
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f'order_{obj.id}',
-            {
-                'type': 'order_update',
-                'status': obj.status
-            }
-        )
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f'order_{obj.id}',
+                {
+                    'type': 'order_update',
+                    'status': obj.status
+                }
+            )
+        except Exception as e:
+            # ❗ NEVER let admin crash
+            print("WebSocket send failed:", e)
+
 
 admin.site.register(Payment)
 admin.site.register(OrderProduct)
