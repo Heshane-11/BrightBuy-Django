@@ -3,12 +3,13 @@
 <p>
   BrightBuy is a <strong>production-ready full-stack e-commerce platform</strong> built using
   <strong>Django</strong>. It supports secure authentication, product management, cart & wishlist,
-  online payments, and transactional emails.
+  online payments, <strong>real-time order tracking using WebSockets</strong>, and transactional emails.
 </p>
 
 <p>
-  This project demonstrates <strong>real-world backend development, API integrations, and deployment
-  practices</strong>, making it ideal for <strong>backend / full-stack internship roles</strong>.
+  This project demonstrates <strong>real-world backend development, event-driven communication,
+  API integrations, and production deployment practices</strong>, making it ideal for
+  <strong>backend / full-stack internship roles</strong>.
 </p>
 
 <hr />
@@ -40,10 +41,11 @@
   <li>Product catalog with categories & variations</li>
   <li>Cart and Wishlist systems</li>
   <li>Checkout with order history</li>
+  <li>Real-time order status tracking using WebSockets</li>
   <li>PayPal payment integration</li>
   <li>Transactional emails via SendGrid</li>
   <li>Image hosting using Cloudinary</li>
-  <li>Admin dashboard for inventory & orders</li>
+  <li>Admin dashboard for inventory & order management</li>
 </ul>
 
 <hr />
@@ -57,6 +59,10 @@
   <tr>
     <td>Backend</td>
     <td>Django (Python)</td>
+  </tr>
+  <tr>
+    <td>Real-Time Communication</td>
+    <td>WebSockets (Django Channels)</td>
   </tr>
   <tr>
     <td>Database</td>
@@ -145,17 +151,19 @@ BrightBuy/
   <li><strong>PayPal:</strong> Secure payment processing</li>
   <li><strong>SendGrid:</strong> Transactional email service</li>
   <li><strong>Cloudinary:</strong> Cloud-based image storage</li>
+  <li><strong>WebSockets:</strong> Real-time order status updates without page refresh</li>
 </ul>
 
 <hr />
 
 <h2>📌 Learning Outcomes</h2>
 <ul>
-  <li>Designed and developed scalable Django backend architecture</li>
-  <li>Integrated third-party APIs (PayPal, SendGrid, Cloudinary)</li>
-  <li>Implemented full e-commerce workflows</li>
-  <li>Applied production-grade security practices</li>
-  <li>Deployed and maintained live system on Render using PostgreSQL</li>
+  <li>Designed and developed a scalable Django backend with modular architecture</li>
+  <li>Implemented real-time order tracking using WebSockets and event-driven communication</li>
+  <li>Integrated third-party services (PayPal, SendGrid, Cloudinary)</li>
+  <li>Built complete e-commerce workflows from checkout to fulfillment</li>
+  <li>Applied production-grade security and environment-based configuration</li>
+  <li>Deployed and maintained a live PostgreSQL-backed system on Render</li>
 </ul>
 
 <hr />
@@ -163,7 +171,7 @@ BrightBuy/
 <h2>👤 Author</h2>
 <p>
   <strong>Heshane Garg</strong><br />
-  B.Tech CSE | Backend & Django Developer<br />
+  Backend Developer | Django & Systems Design Enthusiast<br />
   <a href="https://github.com/Heshane-11">GitHub</a> |
   <a href="https://www.linkedin.com/in/heshane-garg-9b638a28b/">LinkedIn</a>
 </p>
